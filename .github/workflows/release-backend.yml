@@ -1,0 +1,66 @@
+name: Backend Release
+
+# Triggers on backend-v* tags - the ones backend/scripts/build-services.mjs
+# creates locally. Rebuilds exactly the services named in that release's
+# commit message ("release(backend): v<version> - services: <ids>") and
+# attaches their jars to a GitHub Release for the tag.
+
+on:
+  push:
+    tags:
+      - 'backend-v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build + publish backend jars
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Parse services + version from the release commit
+        id: meta
+        run: |
+          VERSION="${GITHUB_REF_NAME#backend-v}"
+          SUBJECT="$(git log -1 --format=%s)"
+          SERVICES="$(echo "$SUBJECT" | sed -n 's/.*services: //p')"
+          if [ -z "$SERVICES" ]; then
+            echo "Could not parse a service list from the tagged commit's message: $SUBJECT" >&2
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "services=$SERVICES" >> "$GITHUB_OUTPUT"
+          echo "Releasing backend v$VERSION: $SERVICES"
+
+      - name: Build selected services
+        working-directory: backend
+        run: mvn -B clean package -pl "${{ steps.meta.outputs.services }}" -am
+
+      - name: Collect built jar paths
+        id: jars
+        run: |
+          VERSION="${{ steps.meta.outputs.version }}"
+          IFS=',' read -ra SVC_ARR <<< "${{ steps.meta.outputs.services }}"
+          {
+            echo "files<<EOF"
+            for s in "${SVC_ARR[@]}"; do
+              echo "backend/${s}/target/${s}-${VERSION}.jar"
+            done
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Publish GitHub Release with jars
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Backend v${{ steps.meta.outputs.version }}
+          body: |
+            Services built: ${{ steps.meta.outputs.services }}
+          files: ${{ steps.jars.outputs.files }}
