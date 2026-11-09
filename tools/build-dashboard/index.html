@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Shell Build Dashboard</title>
+<style>
+  :root {
+    --bg: #f7f7f8;
+    --panel: #ffffff;
+    --border: #e2e2e5;
+    --text: #1a1a1e;
+    --muted: #6b6b73;
+    --accent: #2563eb;
+    --accent-text: #ffffff;
+    --ok: #059669;
+    --err: #dc2626;
+    --mono-bg: #0f172a;
+    --mono-text: #e2e8f0;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #15161a;
+      --panel: #1e1f24;
+      --border: #30313a;
+      --text: #e8e8ec;
+      --muted: #9a9aa3;
+      --accent: #3b82f6;
+      --accent-text: #0b0d12;
+      --ok: #34d399;
+      --err: #f87171;
+      --mono-bg: #0b0d12;
+      --mono-text: #cbd5e1;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    display: flex;
+    justify-content: center;
+    padding: 2.5rem 1rem;
+  }
+  main { width: 100%; max-width: 640px; }
+  h1 { font-size: 1.3rem; margin: 0 0 0.25rem; }
+  .sub { color: var(--muted); font-size: 0.85rem; margin-bottom: 1.5rem; }
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.25rem;
+    margin-bottom: 1.25rem;
+  }
+  .version-row { display: flex; align-items: baseline; gap: 0.6rem; }
+  .version-row .num { font-size: 1.6rem; font-weight: 600; }
+  .version-row .hash { color: var(--muted); font-family: ui-monospace, monospace; font-size: 0.85rem; }
+  fieldset { border: none; padding: 0; margin: 0 0 1rem; }
+  legend { font-weight: 600; font-size: 0.85rem; margin-bottom: 0.5rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.03em; }
+  .app-list { display: flex; flex-direction: column; gap: 0.5rem; }
+  .app-row {
+    display: flex; align-items: center; gap: 0.6rem;
+    padding: 0.5rem 0.6rem; border: 1px solid var(--border); border-radius: 8px;
+    cursor: pointer;
+  }
+  .app-row input { width: 16px; height: 16px; }
+  .app-row .icon { font-size: 1.1rem; }
+  .app-row .name { font-weight: 500; }
+  .app-row .desc { color: var(--muted); font-size: 0.8rem; margin-left: auto; }
+  .release-opts { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; }
+  .release-opts label { display: flex; align-items: center; gap: 0.4rem; font-size: 0.9rem; }
+  select, input[type="text"] {
+    background: var(--bg); color: var(--text); border: 1px solid var(--border);
+    border-radius: 6px; padding: 0.35rem 0.5rem; font-size: 0.9rem;
+  }
+  input[type="text"] { width: 7rem; }
+  button {
+    background: var(--accent); color: var(--accent-text); border: none;
+    border-radius: 8px; padding: 0.6rem 1.2rem; font-size: 0.95rem; font-weight: 600;
+    cursor: pointer; width: 100%;
+  }
+  button:disabled { opacity: 0.6; cursor: wait; }
+  .status { margin-top: 0.75rem; font-size: 0.9rem; }
+  .status.ok { color: var(--ok); }
+  .status.err { color: var(--err); }
+  pre {
+    background: var(--mono-bg); color: var(--mono-text);
+    padding: 0.9rem; border-radius: 8px; font-size: 0.78rem; line-height: 1.4;
+    overflow-x: auto; white-space: pre-wrap; word-break: break-word;
+    max-height: 320px; overflow-y: auto; margin-top: 0.75rem;
+  }
+  .hint { color: var(--muted); font-size: 0.78rem; margin-top: 0.4rem; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Shell Build Dashboard</h1>
+  <div class="sub">Local only - triggers build-apps.mjs on this machine.</div>
+
+  <div class="panel">
+    <div class="version-row">
+      <span class="num" id="version">-</span>
+      <span class="hash" id="head"></span>
+    </div>
+  </div>
+
+  <form class="panel" id="build-form">
+    <fieldset>
+      <legend>Apps to build</legend>
+      <div class="app-list" id="app-list">Loading...</div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Release</legend>
+      <div class="release-opts">
+        <label><input type="radio" name="release-mode" value="bump" checked /> Bump
+          <select id="bump-level">
+            <option value="patch">patch</option>
+            <option value="minor">minor</option>
+            <option value="major">major</option>
+          </select>
+        </label>
+        <label><input type="radio" name="release-mode" value="set" /> Set version
+          <input type="text" id="set-version" placeholder="2.5.0" />
+        </label>
+        <label><input type="radio" name="release-mode" value="none" /> No release (build only)</label>
+      </div>
+      <div class="hint">Release requires a clean git working tree - commit your change first.</div>
+    </fieldset>
+
+    <button type="submit" id="build-btn">Build</button>
+    <div class="status" id="status"></div>
+    <pre id="output" hidden></pre>
+  </form>
+</main>
+
+<script>
+  const el = (id) => document.getElementById(id);
+
+  async function loadStatus() {
+    const res = await fetch('/api/status');
+    const data = await res.json();
+    el('version').textContent = 'v' + data.version;
+    el('head').textContent = data.head ? '@ ' + data.head : '';
+
+    const list = el('app-list');
+    list.innerHTML = '';
+    for (const app of data.apps) {
+      const row = document.createElement('label');
+      row.className = 'app-row';
+      row.innerHTML = `
+        <input type="checkbox" name="app" value="${app.id}" />
+        <span class="icon">${app.icon}</span>
+        <span class="name">${app.name}</span>
+        <span class="desc">${app.description}</span>
+      `;
+      list.appendChild(row);
+    }
+  }
+
+  el('build-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const ids = [...document.querySelectorAll('input[name="app"]:checked')].map((i) => i.value);
+    const statusEl = el('status');
+    const outputEl = el('output');
+    const btn = el('build-btn');
+
+    if (ids.length === 0) {
+      statusEl.textContent = 'Pick at least one app.';
+      statusEl.className = 'status err';
+      return;
+    }
+
+    const mode = document.querySelector('input[name="release-mode"]:checked').value;
+    const body = { ids };
+    if (mode === 'none') body.noRelease = true;
+    else if (mode === 'set') body.setVersion = el('set-version').value;
+    else body.bump = el('bump-level').value;
+
+    btn.disabled = true;
+    statusEl.textContent = 'Building ' + ids.join(', ') + '...';
+    statusEl.className = 'status';
+    outputEl.hidden = true;
+
+    try {
+      const res = await fetch('/api/build', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+
+      statusEl.textContent = data.success
+        ? 'Build succeeded (v' + data.version + ').'
+        : 'Build failed (exit ' + data.exitCode + ').';
+      statusEl.className = 'status ' + (data.success ? 'ok' : 'err');
+
+      outputEl.textContent = data.output || '(no output)';
+      outputEl.hidden = false;
+
+      el('version').textContent = 'v' + data.version;
+    } catch (err) {
+      statusEl.textContent = 'Request failed: ' + err.message;
+      statusEl.className = 'status err';
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  loadStatus();
+</script>
+</body>
+</html>

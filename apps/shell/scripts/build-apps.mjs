@@ -24,12 +24,12 @@ import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-const shellDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const repoRoot = path.resolve(shellDir, '..', '..');
+export const shellDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+export const repoRoot = path.resolve(shellDir, '..', '..');
 const packagesDir = path.join(repoRoot, 'packages');
 const onWindows = process.platform === 'win32';
 
-async function discoverApps() {
+export async function discoverApps() {
   const dirNames = readdirSync(packagesDir).filter(
     (name) => name.startsWith('app-') && statSync(path.join(packagesDir, name)).isDirectory(),
   );
@@ -210,4 +210,8 @@ async function main() {
   console.log('Push with: git push && git push --tags');
 }
 
-main();
+// Only run the CLI when this file is executed directly (`node build-apps.mjs`),
+// not when imported as a module (e.g. by the build dashboard server).
+if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
+  main();
+}
