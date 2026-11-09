@@ -64,14 +64,64 @@ npm run build:apps -- sales,bogus
 # Available apps: analytics, sales, service
 ```
 
-The generated `.env.<mode>` files are harmless to keep around (they're cheap,
-plain text, and reproducible) or delete between runs — your call.
+The generated `.env.<mode>` files are gitignored (see `.gitignore` — only
+the three hand-authored mode files above are tracked), so ad-hoc combos
+don't clutter `git status`. They're harmless to leave on disk between runs
+or delete — your call.
 
 You can also call the script directly instead of through the npm alias:
 
 ```bash
 node apps/shell/scripts/build-apps.mjs sales,analytics
 ```
+
+## Versioning releases
+
+By default, a successful build also cuts a release: `build-apps.mjs` bumps
+the `version` in `apps/shell/package.json`, commits that bump, and creates
+an annotated git tag `shell-v<version>` pointing at it — so you can look
+back later and check out exactly the source that produced a given build.
+
+```bash
+npm run build:apps -- sales,analytics                    # patch bump: 1.0.0 -> 1.0.1
+npm run build:apps -- sales,analytics --bump minor        # minor bump: 1.0.1 -> 1.1.0
+npm run build:apps -- sales,analytics --bump major        # major bump: 1.1.0 -> 2.0.0
+npm run build:apps -- sales,analytics --set-version 2.5.0 # set an exact version
+npm run build:apps -- sales,analytics --no-release        # build only, skip bump/tag
+```
+
+Rules the release step enforces:
+- **The working tree must be clean first.** If you have uncommitted changes
+  (your fix/change from the "1.0 -> 1.2" scenario), the build still runs and
+  `dist/` is still produced, but the bump/commit/tag is skipped with a
+  message telling you to commit first, then re-run. This guarantees the tag
+  always points at a commit that actually contains the change you just
+  built.
+- **No git repo, no release.** If the project isn't a git repo at all, the
+  build runs and the release step is silently skipped (with a warning).
+- **Tags are never reused.** Re-running with a version that's already
+  tagged fails loudly instead of silently overwriting history — pick a
+  different `--bump` level or `--set-version`.
+- **Nothing is pushed automatically.** The script only commits and tags
+  locally; push both yourself when ready:
+  ```bash
+  git push && git push --tags
+  ```
+
+The commit/tag only ever touch `apps/shell/package.json` (via a targeted
+`git add`, never `git add -A`), so any unrelated staged/unstaged work you
+have is left alone — it's just blocked from being released until you
+commit it too.
+
+### What the tag gives you (and what it doesn't)
+
+The tag marks the **source commit**, not the built artifact — `dist/` is
+gitignored and is never committed. If you need to retrieve or redistribute
+the actual files you shipped for `shell-v1.2.0` later, either:
+- rebuild from that tag (`git checkout shell-v1.2.0 && npm run build:apps -- <ids>`,
+  which is fully reproducible since the tag pins the exact source), or
+- keep the `dist/` zip from that build as a release asset somewhere outside
+  git (GitHub Release, S3, artifact registry) at the time you built it.
 
 ## Deploying a built subset
 
