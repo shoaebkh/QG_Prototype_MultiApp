@@ -134,10 +134,14 @@ async function main() {
   );
   console.log(`Wrote ${path.relative(repoRoot, envPath)} (VITE_ENABLED_APPS=${sortedIds.join(',')})`);
 
+  // npm on Windows is npm.cmd, a batch file - spawnSync can't exec it
+  // directly (EINVAL) and needs shell:true. That's safe here because
+  // every arg below is a plain token with no spaces/shell metacharacters
+  // (mode is dash-joined app ids), unlike the git() commit/tag messages.
   const build = spawnSync(
-    onWindows ? 'npm.cmd' : 'npm',
+    'npm',
     ['run', 'build', '-w', '@multiapp/shell', '--', '--mode', mode],
-    { cwd: repoRoot, stdio: 'inherit' },
+    { cwd: repoRoot, stdio: 'inherit', shell: onWindows },
   );
 
   if (build.status !== 0) {
