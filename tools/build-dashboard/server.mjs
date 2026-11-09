@@ -1,14 +1,18 @@
 #!/usr/bin/env node
 // Local-only dashboard: shows the frontend shell's and backend's current
 // versions and lets you trigger build-apps.mjs / build-services.mjs for a
-// chosen combination from a browser instead of the terminal.
+// chosen combination from a browser instead of the terminal. Also drives
+// the Customer-1/2/3 distribution simulation (see ../deploy/) - deploying
+// a chosen frontend/backend version to a customer and starting it on that
+// customer's dedicated ports.
 //
 // Usage: node tools/build-dashboard/server.mjs
 // Then open http://127.0.0.1:5055
 //
 // Deliberately binds to 127.0.0.1 only and has no auth - it shells out to
-// git (commit/tag), vite build, and mvn package on whoever's machine runs
-// it, so it must never be exposed beyond localhost.
+// git (commit/tag), vite build, mvn package, and starts long-running
+// java/node server processes on whoever's machine runs it, so it must
+// never be exposed beyond localhost.
 
 import { createServer } from 'node:http';
 import { readFileSync, existsSync } from 'node:fs';
@@ -17,6 +21,7 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { discoverApps, shellDir, repoRoot } from '../../apps/shell/scripts/build-apps.mjs';
 import { discoverServices, backendDir, readCurrentVersion as readBackendVersion } from '../../backend/scripts/build-services.mjs';
+import { CUSTOMERS, listTags, customerStatus, deployCustomer, stopCustomerDeployment } from '../deploy/deploy-manager.mjs';
 
 const PORT = 5055;
 const HOST = '127.0.0.1';
@@ -138,6 +143,45 @@ async function handleBuild(req, res, { script, readVersion, noun }) {
   });
 }
 
+function handleVersions(res) {
+  sendJson(res, 200, {
+    frontend: listTags('shell-v'),
+    backend: listTags('backend-v'),
+  });
+}
+
+function handleCustomers(res) {
+  sendJson(res, 200, CUSTOMERS.map((id) => customerStatus(id)));
+}
+
+async function handleDeploy(req, res, customerId) {
+  let body;
+  try {
+    body = await readJsonBody(req);
+  } catch {
+    sendJson(res, 400, { success: false, output: 'Invalid JSON body.' });
+    return;
+  }
+
+  try {
+    const result = deployCustomer(customerId, {
+      frontendTag: typeof body.frontendTag === 'string' ? body.frontendTag : null,
+      backendTag: typeof body.backendTag === 'string' ? body.backendTag : null,
+    });
+    sendJson(res, 200, { ...result, output: result.output.replace(/\x1b\[[0-9;]*m/g, '') });
+  } catch (err) {
+    sendJson(res, 400, { success: false, output: String(err.message || err) });
+  }
+}
+
+function handleStop(res, customerId) {
+  try {
+    sendJson(res, 200, stopCustomerDeployment(customerId));
+  } catch (err) {
+    sendJson(res, 400, { success: false, output: String(err.message || err) });
+  }
+}
+
 function handleIndex(res) {
   const html = readFileSync(indexHtmlPath, 'utf8');
   res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
@@ -157,6 +201,16 @@ const server = createServer((req, res) => {
   } else if (req.method === 'POST' && url.pathname === '/api/build-backend') {
     handleBuild(req, res, { script: backendScript, readVersion: readBackendVersionSafe, noun: 'service' })
       .catch((err) => sendJson(res, 500, { success: false, output: String(err) }));
+  } else if (req.method === 'GET' && url.pathname === '/api/versions') {
+    handleVersions(res);
+  } else if (req.method === 'GET' && url.pathname === '/api/customers') {
+    handleCustomers(res);
+  } else if (req.method === 'POST' && /^\/api\/customers\/([^/]+)\/deploy$/.test(url.pathname)) {
+    const [, customerId] = url.pathname.match(/^\/api\/customers\/([^/]+)\/deploy$/);
+    handleDeploy(req, res, customerId).catch((err) => sendJson(res, 500, { success: false, output: String(err) }));
+  } else if (req.method === 'POST' && /^\/api\/customers\/([^/]+)\/stop$/.test(url.pathname)) {
+    const [, customerId] = url.pathname.match(/^\/api\/customers\/([^/]+)\/stop$/);
+    handleStop(res, customerId);
   } else {
     res.writeHead(404, { 'Content-Type': 'text/plain' });
     res.end('Not found');

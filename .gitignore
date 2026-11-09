@@ -11,3 +11,11 @@ apps/shell/.env.*
 !apps/shell/.env.all
 !apps/shell/.env.sales-only
 !apps/shell/.env.sales-service
+
+# Customer-N/ are simulated distribution environments (see
+# tools/deploy/) - the folders themselves are tracked so a fresh clone
+# has them ready to deploy into, but everything deployed/started into
+# them (frontend dist, backend jars, logs, pids) is generated and not
+# version-controlled.
+Customer-*/*
+!Customer-*/.gitkeep

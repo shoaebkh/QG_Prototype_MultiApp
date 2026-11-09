@@ -133,6 +133,10 @@ touching the terminal. See `tools/build-dashboard/` — it binds to
 localhost only and has no auth, since the button directly triggers git
 commits/tags and `vite build` on whoever's machine runs it.
 
+The dashboard's Customers section also lets you deploy a chosen version to
+one of three simulated customer environments (`Customer-1/2/3` at the repo
+root) and start it on that customer's own ports — see `tools/deploy/README.md`.
+
 ## Deploying a built subset
 
 `npm run build:apps -- <ids>` (or any of the `build:*` scripts) produces a

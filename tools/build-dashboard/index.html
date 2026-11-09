@@ -92,6 +92,25 @@
     max-height: 320px; overflow-y: auto; margin-top: 0.75rem;
   }
   .hint { color: var(--muted); font-size: 0.78rem; margin-top: 0.4rem; }
+
+  .customer-card h3 { margin: 0 0 0.75rem; font-size: 1.05rem; }
+  .deployed-row { display: flex; flex-direction: column; gap: 0.3rem; margin-bottom: 0.9rem; font-size: 0.85rem; }
+  .deployed-row .label { color: var(--muted); width: 5rem; display: inline-block; }
+  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 0.4rem; background: var(--muted); }
+  .dot.up { background: var(--ok); }
+  .ports-row { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1rem; }
+  .port-chip {
+    font-family: ui-monospace, monospace; font-size: 0.75rem;
+    background: var(--bg); border: 1px solid var(--border); border-radius: 999px;
+    padding: 0.2rem 0.6rem;
+  }
+  .deploy-row { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 0.9rem; }
+  .deploy-row select { flex: 1; min-width: 10rem; }
+  .btn-row { display: flex; gap: 0.6rem; }
+  .btn-row button { width: auto; flex: 1; }
+  button.secondary { background: var(--panel); color: var(--text); border: 1px solid var(--border); }
+  a.open-link { color: var(--accent); font-size: 0.85rem; text-decoration: none; }
+  a.open-link:hover { text-decoration: underline; }
 </style>
 </head>
 <body>
@@ -165,6 +184,13 @@
     <div class="status"></div>
     <pre hidden></pre>
   </form>
+
+  <h2>Customers</h2>
+  <div class="sub" style="margin-bottom: 1rem;">
+    Deploy a released frontend/backend version to a simulated customer
+    environment and start it on that customer's own ports.
+  </div>
+  <div id="customers"></div>
 </main>
 
 <script>
@@ -256,7 +282,123 @@
     onSuccess: (v) => { document.getElementById('backend-version').textContent = 'v' + v; },
   });
 
+  function tagOptions(tags) {
+    return '<option value="">(keep current)</option>' + tags.map((t) => `<option value="${t}">${t}</option>`).join('');
+  }
+
+  function portChip(label, port, up) {
+    return `<span class="port-chip"><span class="dot ${up ? 'up' : ''}"></span>${label} :${port}</span>`;
+  }
+
+  function customerCardHtml(customer, versions) {
+    const { id, ports, frontend, backend, running } = customer;
+    const feSummary = frontend ? `${frontend.tag} (${frontend.apps.join(',')})` : 'not deployed';
+    const beSummary = backend ? `${backend.tag} (${backend.services.join(',')})` : 'not deployed';
+
+    return `
+      <div class="panel customer-card" data-customer="${id}">
+        <h3>${id}</h3>
+        <div class="deployed-row">
+          <div><span class="label">Frontend</span><span class="dot ${running.frontend ? 'up' : ''}"></span>${feSummary}</div>
+          <div><span class="label">Backend</span>${beSummary}</div>
+        </div>
+        <div class="ports-row">
+          ${portChip('frontend', ports.frontend, running.frontend)}
+          ${portChip('gateway', ports['api-gateway'], running['api-gateway'])}
+          ${portChip('sales', ports['sales-service'], running['sales-service'])}
+          ${portChip('service', ports['service-service'], running['service-service'])}
+          ${portChip('analytics', ports['analytics-service'], running['analytics-service'])}
+        </div>
+        <div class="deploy-row">
+          <select class="frontend-tag">${tagOptions(versions.frontend)}</select>
+          <select class="backend-tag">${tagOptions(versions.backend)}</select>
+        </div>
+        <div class="btn-row">
+          <button type="button" class="deploy-btn">Deploy</button>
+          <button type="button" class="stop-btn secondary">Stop</button>
+        </div>
+        ${running.frontend ? `<div style="margin-top:0.6rem;"><a class="open-link" href="http://127.0.0.1:${ports.frontend}" target="_blank" rel="noopener">Open http://127.0.0.1:${ports.frontend}</a></div>` : ''}
+        <div class="status"></div>
+        <pre hidden></pre>
+      </div>
+    `;
+  }
+
+  async function loadCustomers() {
+    const [versionsRes, customersRes] = await Promise.all([fetch('/api/versions'), fetch('/api/customers')]);
+    const versions = await versionsRes.json();
+    const customers = await customersRes.json();
+
+    const container = document.getElementById('customers');
+    container.innerHTML = customers.map((c) => customerCardHtml(c, versions)).join('');
+  }
+
+  document.getElementById('customers').addEventListener('click', async (e) => {
+    const card = e.target.closest('.customer-card');
+    if (!card) return;
+    const customerId = card.dataset.customer;
+    const statusEl = card.querySelector('.status');
+    const outputEl = card.querySelector('pre');
+    const deployBtn = card.querySelector('.deploy-btn');
+    const stopBtn = card.querySelector('.stop-btn');
+
+    if (e.target === deployBtn) {
+      const frontendTag = card.querySelector('.frontend-tag').value || null;
+      const backendTag = card.querySelector('.backend-tag').value || null;
+      if (!frontendTag && !backendTag) {
+        statusEl.textContent = 'Pick a frontend version, a backend version, or both.';
+        statusEl.className = 'status err';
+        return;
+      }
+
+      deployBtn.disabled = true;
+      stopBtn.disabled = true;
+      statusEl.textContent = 'Deploying...';
+      statusEl.className = 'status';
+      outputEl.hidden = true;
+
+      try {
+        const res = await fetch(`/api/customers/${customerId}/deploy`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ frontendTag, backendTag }),
+        });
+        const data = await res.json();
+        outputEl.textContent = data.output || '(no output)';
+        outputEl.hidden = false;
+        if (!data.success) {
+          statusEl.textContent = 'Deploy failed.';
+          statusEl.className = 'status err';
+          deployBtn.disabled = false;
+          stopBtn.disabled = false;
+          return;
+        }
+      } catch (err) {
+        statusEl.textContent = 'Request failed: ' + err.message;
+        statusEl.className = 'status err';
+        deployBtn.disabled = false;
+        stopBtn.disabled = false;
+        return;
+      }
+      await loadCustomers();
+    } else if (e.target === stopBtn) {
+      deployBtn.disabled = true;
+      stopBtn.disabled = true;
+      statusEl.textContent = 'Stopping...';
+      statusEl.className = 'status';
+
+      try {
+        await fetch(`/api/customers/${customerId}/stop`, { method: 'POST' });
+      } catch (err) {
+        statusEl.textContent = 'Request failed: ' + err.message;
+        statusEl.className = 'status err';
+      }
+      await loadCustomers();
+    }
+  });
+
   loadStatus();
+  loadCustomers();
 </script>
 </body>
 </html>

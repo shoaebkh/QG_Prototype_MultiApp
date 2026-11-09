@@ -79,6 +79,10 @@ alongside the frontend one - current version, a checklist of services, and
 a Build button that runs the exact flow above from a browser. See
 `tools/build-dashboard/`.
 
+The dashboard's Customers section deploys a chosen backend version (one of
+these jars) to a simulated customer environment and runs it on that
+customer's dedicated port - see `tools/deploy/README.md`.
+
 ## CI / release automation
 
 - `.github/workflows/ci.yml` builds every module (`mvn clean package`, no
