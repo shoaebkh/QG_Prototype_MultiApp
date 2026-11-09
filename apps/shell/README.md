@@ -123,6 +123,16 @@ the actual files you shipped for `shell-v1.2.0` later, either:
 - keep the `dist/` zip from that build as a release asset somewhere outside
   git (GitHub Release, S3, artifact registry) at the time you built it.
 
+### Build dashboard (browser UI)
+
+`npm run dashboard` (from the repo root) starts a local-only server at
+`http://127.0.0.1:5055` showing the current version + git commit, a
+checklist of apps, and a Build button that runs the exact same
+`build-apps.mjs` flow above (bump/set-version/no-release included) without
+touching the terminal. See `tools/build-dashboard/` — it binds to
+localhost only and has no auth, since the button directly triggers git
+commits/tags and `vite build` on whoever's machine runs it.
+
 ## Deploying a built subset
 
 `npm run build:apps -- <ids>` (or any of the `build:*` scripts) produces a
