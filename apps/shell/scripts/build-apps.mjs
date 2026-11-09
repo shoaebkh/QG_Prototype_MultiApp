@@ -135,9 +135,9 @@ async function main() {
   console.log(`Wrote ${path.relative(repoRoot, envPath)} (VITE_ENABLED_APPS=${sortedIds.join(',')})`);
 
   const build = spawnSync(
-    'npm',
+    onWindows ? 'npm.cmd' : 'npm',
     ['run', 'build', '-w', '@multiapp/shell', '--', '--mode', mode],
-    { cwd: repoRoot, stdio: 'inherit', shell: onWindows },
+    { cwd: repoRoot, stdio: 'inherit' },
   );
 
   if (build.status !== 0) {
