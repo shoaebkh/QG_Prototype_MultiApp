@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<title>Shell Build Dashboard</title>
+<title>Build Dashboard</title>
 <style>
   :root {
     --bg: #f7f7f8;
@@ -42,8 +42,10 @@
     justify-content: center;
     padding: 2.5rem 1rem;
   }
-  main { width: 100%; max-width: 640px; }
+  main { width: 100%; max-width: 680px; }
   h1 { font-size: 1.3rem; margin: 0 0 0.25rem; }
+  h2 { font-size: 1rem; margin: 2rem 0 0.75rem; }
+  h2:first-of-type { margin-top: 0; }
   .sub { color: var(--muted); font-size: 0.85rem; margin-bottom: 1.5rem; }
   .panel {
     background: var(--panel);
@@ -53,20 +55,20 @@
     margin-bottom: 1.25rem;
   }
   .version-row { display: flex; align-items: baseline; gap: 0.6rem; }
-  .version-row .num { font-size: 1.6rem; font-weight: 600; }
+  .version-row .num { font-size: 1.4rem; font-weight: 600; }
   .version-row .hash { color: var(--muted); font-family: ui-monospace, monospace; font-size: 0.85rem; }
   fieldset { border: none; padding: 0; margin: 0 0 1rem; }
   legend { font-weight: 600; font-size: 0.85rem; margin-bottom: 0.5rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.03em; }
-  .app-list { display: flex; flex-direction: column; gap: 0.5rem; }
-  .app-row {
+  .item-list { display: flex; flex-direction: column; gap: 0.5rem; }
+  .item-row {
     display: flex; align-items: center; gap: 0.6rem;
     padding: 0.5rem 0.6rem; border: 1px solid var(--border); border-radius: 8px;
     cursor: pointer;
   }
-  .app-row input { width: 16px; height: 16px; }
-  .app-row .icon { font-size: 1.1rem; }
-  .app-row .name { font-weight: 500; }
-  .app-row .desc { color: var(--muted); font-size: 0.8rem; margin-left: auto; }
+  .item-row input { width: 16px; height: 16px; }
+  .item-row .icon { font-size: 1.1rem; }
+  .item-row .name { font-weight: 500; }
+  .item-row .desc { color: var(--muted); font-size: 0.8rem; margin-left: auto; }
   .release-opts { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; }
   .release-opts label { display: flex; align-items: center; gap: 0.4rem; font-size: 0.9rem; }
   select, input[type="text"] {
@@ -94,117 +96,164 @@
 </head>
 <body>
 <main>
-  <h1>Shell Build Dashboard</h1>
-  <div class="sub">Local only - triggers build-apps.mjs on this machine.</div>
+  <h1>Build Dashboard</h1>
+  <div class="sub">Local only - triggers build-apps.mjs / build-services.mjs on this machine.</div>
 
+  <h2>Frontend</h2>
   <div class="panel">
     <div class="version-row">
-      <span class="num" id="version">-</span>
+      <span class="num" id="frontend-version">-</span>
       <span class="hash" id="head"></span>
     </div>
   </div>
-
-  <form class="panel" id="build-form">
+  <form class="panel build-form" id="frontend-form" data-endpoint="/api/build" data-noun="app">
     <fieldset>
       <legend>Apps to build</legend>
-      <div class="app-list" id="app-list">Loading...</div>
+      <div class="item-list" id="frontend-list">Loading...</div>
     </fieldset>
-
     <fieldset>
       <legend>Release</legend>
       <div class="release-opts">
         <label><input type="radio" name="release-mode" value="bump" checked /> Bump
-          <select id="bump-level">
+          <select class="bump-level">
             <option value="patch">patch</option>
             <option value="minor">minor</option>
             <option value="major">major</option>
           </select>
         </label>
         <label><input type="radio" name="release-mode" value="set" /> Set version
-          <input type="text" id="set-version" placeholder="2.5.0" />
+          <input type="text" class="set-version" placeholder="2.5.0" />
         </label>
         <label><input type="radio" name="release-mode" value="none" /> No release (build only)</label>
       </div>
       <div class="hint">Release requires a clean git working tree - commit your change first.</div>
     </fieldset>
+    <button type="submit">Build frontend</button>
+    <div class="status"></div>
+    <pre hidden></pre>
+  </form>
 
-    <button type="submit" id="build-btn">Build</button>
-    <div class="status" id="status"></div>
-    <pre id="output" hidden></pre>
+  <h2>Backend</h2>
+  <div class="panel">
+    <div class="version-row">
+      <span class="num" id="backend-version">-</span>
+    </div>
+  </div>
+  <form class="panel build-form" id="backend-form" data-endpoint="/api/build-backend" data-noun="service">
+    <fieldset>
+      <legend>Services to build</legend>
+      <div class="item-list" id="backend-list">Loading...</div>
+    </fieldset>
+    <fieldset>
+      <legend>Release</legend>
+      <div class="release-opts">
+        <label><input type="radio" name="release-mode" value="bump" checked /> Bump
+          <select class="bump-level">
+            <option value="patch">patch</option>
+            <option value="minor">minor</option>
+            <option value="major">major</option>
+          </select>
+        </label>
+        <label><input type="radio" name="release-mode" value="set" /> Set version
+          <input type="text" class="set-version" placeholder="2.5.0" />
+        </label>
+        <label><input type="radio" name="release-mode" value="none" /> No release (build only)</label>
+      </div>
+      <div class="hint">Release requires a clean git working tree - commit your change first.</div>
+    </fieldset>
+    <button type="submit">Build backend</button>
+    <div class="status"></div>
+    <pre hidden></pre>
   </form>
 </main>
 
 <script>
-  const el = (id) => document.getElementById(id);
+  function renderList(container, items) {
+    container.innerHTML = '';
+    for (const item of items) {
+      const row = document.createElement('label');
+      row.className = 'item-row';
+      row.innerHTML = `
+        <input type="checkbox" name="item" value="${item.id}" />
+        <span class="icon">${item.icon}</span>
+        <span class="name">${item.name}</span>
+        <span class="desc">${item.description}</span>
+      `;
+      container.appendChild(row);
+    }
+  }
+
+  function wireBuildForm(form, { onSuccess } = {}) {
+    const endpoint = form.dataset.endpoint;
+    const noun = form.dataset.noun;
+    const statusEl = form.querySelector('.status');
+    const outputEl = form.querySelector('pre');
+    const btn = form.querySelector('button[type="submit"]');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const ids = [...form.querySelectorAll('input[name="item"]:checked')].map((i) => i.value);
+
+      if (ids.length === 0) {
+        statusEl.textContent = `Pick at least one ${noun}.`;
+        statusEl.className = 'status err';
+        return;
+      }
+
+      const mode = form.querySelector('input[name="release-mode"]:checked').value;
+      const body = { ids };
+      if (mode === 'none') body.noRelease = true;
+      else if (mode === 'set') body.setVersion = form.querySelector('.set-version').value;
+      else body.bump = form.querySelector('.bump-level').value;
+
+      btn.disabled = true;
+      statusEl.textContent = 'Building ' + ids.join(', ') + '...';
+      statusEl.className = 'status';
+      outputEl.hidden = true;
+
+      try {
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        const data = await res.json();
+
+        statusEl.textContent = data.success
+          ? 'Build succeeded (v' + data.version + ').'
+          : 'Build failed (exit ' + data.exitCode + ').';
+        statusEl.className = 'status ' + (data.success ? 'ok' : 'err');
+
+        outputEl.textContent = data.output || '(no output)';
+        outputEl.hidden = false;
+
+        if (data.success && onSuccess) onSuccess(data.version);
+      } catch (err) {
+        statusEl.textContent = 'Request failed: ' + err.message;
+        statusEl.className = 'status err';
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  }
 
   async function loadStatus() {
     const res = await fetch('/api/status');
     const data = await res.json();
-    el('version').textContent = 'v' + data.version;
-    el('head').textContent = data.head ? '@ ' + data.head : '';
 
-    const list = el('app-list');
-    list.innerHTML = '';
-    for (const app of data.apps) {
-      const row = document.createElement('label');
-      row.className = 'app-row';
-      row.innerHTML = `
-        <input type="checkbox" name="app" value="${app.id}" />
-        <span class="icon">${app.icon}</span>
-        <span class="name">${app.name}</span>
-        <span class="desc">${app.description}</span>
-      `;
-      list.appendChild(row);
-    }
+    document.getElementById('frontend-version').textContent = 'v' + data.frontend.version;
+    document.getElementById('head').textContent = data.head ? '@ ' + data.head : '';
+    document.getElementById('backend-version').textContent = 'v' + data.backend.version;
+
+    renderList(document.getElementById('frontend-list'), data.frontend.apps);
+    renderList(document.getElementById('backend-list'), data.backend.services);
   }
 
-  el('build-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const ids = [...document.querySelectorAll('input[name="app"]:checked')].map((i) => i.value);
-    const statusEl = el('status');
-    const outputEl = el('output');
-    const btn = el('build-btn');
-
-    if (ids.length === 0) {
-      statusEl.textContent = 'Pick at least one app.';
-      statusEl.className = 'status err';
-      return;
-    }
-
-    const mode = document.querySelector('input[name="release-mode"]:checked').value;
-    const body = { ids };
-    if (mode === 'none') body.noRelease = true;
-    else if (mode === 'set') body.setVersion = el('set-version').value;
-    else body.bump = el('bump-level').value;
-
-    btn.disabled = true;
-    statusEl.textContent = 'Building ' + ids.join(', ') + '...';
-    statusEl.className = 'status';
-    outputEl.hidden = true;
-
-    try {
-      const res = await fetch('/api/build', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-      const data = await res.json();
-
-      statusEl.textContent = data.success
-        ? 'Build succeeded (v' + data.version + ').'
-        : 'Build failed (exit ' + data.exitCode + ').';
-      statusEl.className = 'status ' + (data.success ? 'ok' : 'err');
-
-      outputEl.textContent = data.output || '(no output)';
-      outputEl.hidden = false;
-
-      el('version').textContent = 'v' + data.version;
-    } catch (err) {
-      statusEl.textContent = 'Request failed: ' + err.message;
-      statusEl.className = 'status err';
-    } finally {
-      btn.disabled = false;
-    }
+  wireBuildForm(document.getElementById('frontend-form'), {
+    onSuccess: (v) => { document.getElementById('frontend-version').textContent = 'v' + v; },
+  });
+  wireBuildForm(document.getElementById('backend-form'), {
+    onSuccess: (v) => { document.getElementById('backend-version').textContent = 'v' + v; },
   });
 
   loadStatus();
