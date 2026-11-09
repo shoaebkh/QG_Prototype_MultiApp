@@ -84,7 +84,10 @@ function bumpVersion(current, level) {
 }
 
 function git(args) {
-  return spawnSync('git', args, { cwd: repoRoot, encoding: 'utf8', shell: onWindows });
+  // git.exe is a real executable (unlike npm.cmd), so it must NOT go through
+  // shell:true on Windows - that reopens quoting and re-tokenizes multi-word
+  // args like `-m "release(shell): v1.2.0 - apps: sales,analytics"`.
+  return spawnSync('git', args, { cwd: repoRoot, encoding: 'utf8' });
 }
 
 function isGitClean() {
