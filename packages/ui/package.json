@@ -1,0 +1,13 @@
+{
+  "name": "@multiapp/ui",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "exports": {
+    "./index.css": "./src/index.css",
+    ".": "./src/index.js"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0"
+  }
+}

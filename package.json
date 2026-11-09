@@ -1,0 +1,17 @@
+{
+  "name": "react-multiapp-demo",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w @multiapp/shell",
+    "build:all": "npm run build -w @multiapp/shell -- --mode all",
+    "build:sales-service": "npm run build -w @multiapp/shell -- --mode sales-service",
+    "build:sales-only": "npm run build -w @multiapp/shell -- --mode sales-only",
+    "build:apps": "node apps/shell/scripts/build-apps.mjs",
+    "preview": "npm run preview -w @multiapp/shell"
+  }
+}

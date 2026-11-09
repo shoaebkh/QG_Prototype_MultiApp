@@ -1,0 +1,52 @@
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.3.4)
+
+2026-11-06T17:29:18.414+05:30  INFO 37096 --- [service-service] [           main] c.multiapp.service.ServiceApplication    : Starting ServiceApplication v0.0.1-SNAPSHOT using Java 21.0.5 with PID 37096 (D:\Java Projects\QG_Prototype_MultiApp\backend\service-service\target\service-service-0.0.1-SNAPSHOT.jar started by khans in D:\Java Projects\QG_Prototype_MultiApp\backend)
+2026-11-06T17:29:18.427+05:30  INFO 37096 --- [service-service] [           main] c.multiapp.service.ServiceApplication    : No active profile set, falling back to 1 default profile: "default"
+2026-11-06T17:29:24.261+05:30  INFO 37096 --- [service-service] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-11-06T17:29:24.588+05:30  INFO 37096 --- [service-service] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 260 ms. Found 1 JPA repository interface.
+2026-11-06T17:29:28.426+05:30  INFO 37096 --- [service-service] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8082 (http)
+2026-11-06T17:29:28.458+05:30  INFO 37096 --- [service-service] [           main] o.a.catalina.core.AprLifecycleListener   : Loaded Apache Tomcat Native library [2.0.9] using APR version [1.7.6].
+2026-11-06T17:29:28.484+05:30  INFO 37096 --- [service-service] [           main] o.a.catalina.core.AprLifecycleListener   : OpenSSL successfully initialized [OpenSSL 3.5.0 8 Apr 2025]
+2026-11-06T17:29:28.535+05:30  INFO 37096 --- [service-service] [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-11-06T17:29:28.535+05:30  INFO 37096 --- [service-service] [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.30]
+2026-11-06T17:29:28.757+05:30  INFO 37096 --- [service-service] [           main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2026-11-06T17:29:28.764+05:30  INFO 37096 --- [service-service] [           main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 9881 ms
+2026-11-06T17:29:29.026+05:30  INFO 37096 --- [service-service] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-11-06T17:29:30.647+05:30  INFO 37096 --- [service-service] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection conn0: url=jdbc:h2:mem:servicedb user=SA
+2026-11-06T17:29:30.664+05:30  INFO 37096 --- [service-service] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-11-06T17:29:30.725+05:30  INFO 37096 --- [service-service] [           main] o.s.b.a.h2.H2ConsoleAutoConfiguration    : H2 console available at '/h2-console'. Database available at 'jdbc:h2:mem:servicedb'
+2026-11-06T17:29:32.058+05:30  INFO 37096 --- [service-service] [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-11-06T17:29:32.732+05:30  INFO 37096 --- [service-service] [           main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.5.3.Final
+2026-11-06T17:29:32.986+05:30  INFO 37096 --- [service-service] [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-11-06T17:29:35.287+05:30  INFO 37096 --- [service-service] [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-11-06T17:29:38.846+05:30  INFO 37096 --- [service-service] [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+Hibernate: create table case_record (id varchar(255) not null, account_name varchar(255), lead_id varchar(255), amount numeric(38,2), primary key (id))
+2026-11-06T17:29:39.198+05:30  INFO 37096 --- [service-service] [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-11-06T17:29:40.760+05:30  WARN 37096 --- [service-service] [           main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-11-06T17:29:43.570+05:30  INFO 37096 --- [service-service] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8082 (http) with context path '/'
+2026-11-06T17:29:43.695+05:30  INFO 37096 --- [service-service] [           main] c.multiapp.service.ServiceApplication    : Started ServiceApplication in 28.531 seconds (process running for 32.258)
+2026-11-06T17:30:19.649+05:30  INFO 37096 --- [service-service] [nio-8082-exec-4] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-11-06T17:30:19.649+05:30  INFO 37096 --- [service-service] [nio-8082-exec-4] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2026-11-06T17:30:19.650+05:30  INFO 37096 --- [service-service] [nio-8082-exec-4] o.s.web.servlet.DispatcherServlet        : Completed initialization in 1 ms
+Hibernate: select cr1_0.id,cr1_0.account_name,cr1_0.lead_id,cr1_0.amount from case_record cr1_0 where cr1_0.id=?
+Hibernate: insert into case_record (account_name,lead_id,amount,id) values (?,?,?,?)
+Hibernate: select cr1_0.id,cr1_0.account_name,cr1_0.lead_id,cr1_0.amount from case_record cr1_0 where cr1_0.id=?
+Hibernate: select cr1_0.id,cr1_0.account_name,cr1_0.lead_id,cr1_0.amount from case_record cr1_0 where cr1_0.id=?
+Hibernate: select cr1_0.id,cr1_0.account_name,cr1_0.lead_id,cr1_0.amount from case_record cr1_0
+Hibernate: select cr1_0.id,cr1_0.account_name,cr1_0.lead_id,cr1_0.amount from case_record cr1_0
+Hibernate: select cr1_0.id,cr1_0.account_name,cr1_0.lead_id,cr1_0.amount from case_record cr1_0 where cr1_0.id=?
+Hibernate: select cr1_0.id,cr1_0.account_name,cr1_0.lead_id,cr1_0.amount from case_record cr1_0 where cr1_0.id=?
+Hibernate: select cr1_0.id,cr1_0.account_name,cr1_0.lead_id,cr1_0.amount from case_record cr1_0 where cr1_0.id=?
+Hibernate: select cr1_0.id,cr1_0.account_name,cr1_0.lead_id,cr1_0.amount from case_record cr1_0 where cr1_0.id=?
+Hibernate: select cr1_0.id,cr1_0.account_name,cr1_0.lead_id,cr1_0.amount from case_record cr1_0
+Hibernate: select cr1_0.id,cr1_0.account_name,cr1_0.lead_id,cr1_0.amount from case_record cr1_0
+Hibernate: select cr1_0.id,cr1_0.account_name,cr1_0.lead_id,cr1_0.amount from case_record cr1_0
+Hibernate: select cr1_0.id,cr1_0.account_name,cr1_0.lead_id,cr1_0.amount from case_record cr1_0

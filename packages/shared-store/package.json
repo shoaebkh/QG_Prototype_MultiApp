@@ -1,0 +1,10 @@
+{
+  "name": "@multiapp/shared-store",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "main": "./src/index.js",
+  "peerDependencies": {
+    "zustand": "^4.0.0"
+  }
+}

@@ -1,0 +1,9 @@
+server:
+  port: 8083
+
+app:
+  service-url: ${SERVICE_SERVICE_URL:http://localhost:8082}
+
+spring:
+  application:
+    name: analytics-service

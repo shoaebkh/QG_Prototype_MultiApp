@@ -1,0 +1,21 @@
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.3.4)
+
+2026-11-06T17:29:19.117+05:30  INFO 34776 --- [           main] c.multiapp.gateway.GatewayApplication    : Starting GatewayApplication v0.0.1-SNAPSHOT using Java 21.0.5 with PID 34776 (D:\Java Projects\QG_Prototype_MultiApp\backend\api-gateway\target\api-gateway-0.0.1-SNAPSHOT.jar started by khans in D:\Java Projects\QG_Prototype_MultiApp\backend)
+2026-11-06T17:29:19.132+05:30  INFO 34776 --- [           main] c.multiapp.gateway.GatewayApplication    : No active profile set, falling back to 1 default profile: "default"
+2026-11-06T17:29:27.045+05:30  INFO 34776 --- [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8080 (http)
+2026-11-06T17:29:27.061+05:30  INFO 34776 --- [           main] o.a.catalina.core.AprLifecycleListener   : Loaded Apache Tomcat Native library [2.0.9] using APR version [1.7.6].
+2026-11-06T17:29:27.154+05:30  INFO 34776 --- [           main] o.a.catalina.core.AprLifecycleListener   : OpenSSL successfully initialized [OpenSSL 3.5.0 8 Apr 2025]
+2026-11-06T17:29:27.254+05:30  INFO 34776 --- [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-11-06T17:29:27.254+05:30  INFO 34776 --- [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.30]
+2026-11-06T17:29:27.692+05:30  INFO 34776 --- [           main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2026-11-06T17:29:27.696+05:30  INFO 34776 --- [           main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 7985 ms
+2026-11-06T17:29:30.601+05:30  INFO 34776 --- [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8080 (http) with context path '/'
+2026-11-06T17:29:30.682+05:30  INFO 34776 --- [           main] c.multiapp.gateway.GatewayApplication    : Started GatewayApplication in 14.981 seconds (process running for 18.941)

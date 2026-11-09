@@ -1,0 +1,19 @@
+{
+  "name": "@multiapp/app-sales",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "exports": {
+    "./manifest": "./src/manifest.js",
+    "./routes": "./src/routes.jsx"
+  },
+  "dependencies": {
+    "@multiapp/ui": "*",
+    "@multiapp/event-bus": "*",
+    "@multiapp/shared-nav": "*"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0",
+    "react-router-dom": "^6.0.0"
+  }
+}

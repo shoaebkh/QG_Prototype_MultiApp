@@ -1,0 +1,77 @@
+:root {
+  --ma-bg: #f4f6f9;
+  --ma-surface: #ffffff;
+  --ma-border: #e2e5ea;
+  --ma-text: #1b1f27;
+  --ma-text-muted: #6b7280;
+  --ma-primary: #2563eb;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--ma-bg);
+  color: var(--ma-text);
+  font-family: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+.ma-btn {
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 8px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.ma-btn--primary { background: var(--ma-primary); color: #fff; }
+.ma-btn--primary:hover { background: #1d4ed8; }
+.ma-btn--secondary { background: var(--ma-surface); color: var(--ma-text); border-color: var(--ma-border); }
+.ma-btn--secondary:hover { background: #eef1f5; }
+.ma-btn--ghost { background: transparent; color: var(--ma-text); }
+.ma-btn--ghost:hover { background: #eef1f5; }
+
+.ma-card {
+  background: var(--ma-surface);
+  border: 1px solid var(--ma-border);
+  border-radius: 10px;
+  padding: 20px;
+}
+
+.ma-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 18px;
+}
+.ma-badge--neutral { background: #e2e5ea; color: #374151; }
+.ma-badge--danger { background: #dc2626; color: #fff; }
+.ma-badge--info { background: #2563eb; color: #fff; }
+
+.ma-tile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  background: var(--ma-surface);
+  border: 1px solid var(--ma-border);
+  border-left: 4px solid var(--tile-color, var(--ma-primary));
+  border-radius: 8px;
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+.ma-tile:hover { box-shadow: 0 2px 10px rgba(0,0,0,0.08); transform: translateY(-1px); }
+.ma-tile--compact { padding: 10px 12px; }
+.ma-tile__icon { font-size: 24px; line-height: 1; }
+.ma-tile--compact .ma-tile__icon { font-size: 18px; }
+.ma-tile__text { display: flex; flex-direction: column; gap: 2px; }
+.ma-tile__name { font-weight: 600; font-size: 14px; color: var(--ma-text); }
+.ma-tile__desc { font-size: 12px; color: var(--ma-text-muted); }

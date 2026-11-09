@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>com.multiapp</groupId>
+    <artifactId>backend</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>events</artifactId>
+
+  <!--
+    Deliberately no Spring dependency here, same as @multiapp/event-bus
+    having no React dependency. This module is just the event *shape* -
+    a contract any module (or, later, a separate service over a message
+    broker) can publish/consume without depending on Spring's API.
+  -->
+</project>
