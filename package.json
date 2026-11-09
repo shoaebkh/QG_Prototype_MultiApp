@@ -12,6 +12,7 @@
     "build:sales-service": "npm run build -w @multiapp/shell -- --mode sales-service",
     "build:sales-only": "npm run build -w @multiapp/shell -- --mode sales-only",
     "build:apps": "node apps/shell/scripts/build-apps.mjs",
+    "build:backend": "node backend/scripts/build-services.mjs",
     "dashboard": "node tools/build-dashboard/server.mjs",
     "preview": "npm run preview -w @multiapp/shell"
   }
