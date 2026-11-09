@@ -19,6 +19,12 @@ public class LeadSeeder implements CommandLineRunner {
 
   @Override
   public void run(String... args) {
+    // The database is now persistent (Postgres), not recreated fresh on
+    // every restart like the old H2 in-memory setup - so this has to be
+    // idempotent or a second startup fails on a duplicate-key insert.
+    if (leadRepository.count() > 0) {
+      return;
+    }
     leadRepository.save(new Lead("L-100", "Acme Corp", "Negotiation", new BigDecimal("42000")));
     leadRepository.save(new Lead("L-101", "Globex Inc", "Qualified", new BigDecimal("18500")));
     leadRepository.save(new Lead("L-102", "Initech", "New", new BigDecimal("9200")));

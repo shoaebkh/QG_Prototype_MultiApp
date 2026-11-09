@@ -16,6 +16,30 @@ can be built and deployed on its own:
 All modules (including `common`/`events`) share one Maven version, since
 every module's pom has `<parent>com.multiapp:backend:<version></parent>`.
 
+## Database
+
+`sales-service` and `service-service` persist to a shared local Postgres
+database, `ERP_Prototype` (which also has unrelated tables from another
+project on this machine - `lead`/`case_record` are the only ones these
+two services touch). Connection (overridable via `DB_URL`/`DB_USERNAME`/
+`DB_PASSWORD` env vars, defaults match the local dev instance):
+
+```
+jdbc:postgresql://localhost:5433/ERP_Prototype
+postgres / postgres
+```
+
+`spring.jpa.hibernate.ddl-auto` is `validate`, not `update` - the schema
+is owned by `backend/scripts/erp-prototype-schema.sql`, not Hibernate.
+Run that script once against a fresh database before starting either
+service for the first time:
+
+```bash
+psql -h localhost -p 5433 -U postgres -d ERP_Prototype -f backend/scripts/erp-prototype-schema.sql
+```
+
+`analytics-service` and `api-gateway` have no database of their own.
+
 ## Building a subset of services
 
 Use `backend/scripts/build-services.mjs` (wired up as the root
