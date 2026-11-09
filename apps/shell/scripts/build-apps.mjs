@@ -1,16 +1,25 @@
 #!/usr/bin/env node
-// Builds the shell with only a chosen subset of apps bundled.
+// Builds the shell with only a chosen subset of apps bundled, and (unless
+// told not to) cuts a release: bump apps/shell/package.json's version,
+// commit that bump, and tag it.
 //
 // Usage (from the repo root):
 //   npm run build:apps -- sales,analytics
+//   npm run build:apps -- sales,analytics --bump minor
+//   npm run build:apps -- sales,analytics --set-version 2.0.0
+//   npm run build:apps -- sales,analytics --no-release   (build only, skip bump/tag)
 // or directly:
 //   node apps/shell/scripts/build-apps.mjs sales,analytics
 //
 // App ids are discovered from packages/app-*/src/manifest.js, so adding a
 // new app-* package makes it available here automatically - nothing in
 // this script needs to change.
+//
+// The release step requires a clean working tree (ignoring gitignored
+// files) - commit your fix/change first, then run this to build + tag it.
+// Nothing is ever pushed automatically.
 
-import { readdirSync, statSync, writeFileSync } from 'node:fs';
+import { readdirSync, statSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -18,6 +27,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 const shellDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const repoRoot = path.resolve(shellDir, '..', '..');
 const packagesDir = path.join(repoRoot, 'packages');
+const onWindows = process.platform === 'win32';
 
 async function discoverApps() {
   const dirNames = readdirSync(packagesDir).filter(
@@ -34,20 +44,68 @@ async function discoverApps() {
 }
 
 function printUsage(apps) {
-  console.error('Usage: build-apps.mjs <app-id>[,<app-id>...]');
+  console.error('Usage: build-apps.mjs <app-id>[,<app-id>...] [--bump major|minor|patch] [--set-version X.Y.Z] [--no-release]');
   console.error(`Available apps: ${[...apps.keys()].sort().join(', ')}`);
+}
+
+function parseFlags(flagArgs) {
+  const has = (name) => flagArgs.includes(`--${name}`) || flagArgs.some((f) => f.startsWith(`--${name}=`));
+  const value = (name, fallback) => {
+    const eqArg = flagArgs.find((f) => f.startsWith(`--${name}=`));
+    if (eqArg) return eqArg.slice(`--${name}=`.length);
+    const idx = flagArgs.indexOf(`--${name}`);
+    if (idx !== -1 && flagArgs[idx + 1] !== undefined) return flagArgs[idx + 1];
+    return fallback;
+  };
+
+  return {
+    release: !has('no-release'),
+    bumpLevel: value('bump', 'patch'),
+    setVersion: value('set-version', null),
+  };
+}
+
+function bumpVersion(current, level) {
+  const m = /^(\d+)\.(\d+)\.(\d+)$/.exec(current);
+  if (!m) {
+    throw new Error(`Current version "${current}" isn't a plain X.Y.Z semver - use --set-version instead.`);
+  }
+  let [major, minor, patch] = [Number(m[1]), Number(m[2]), Number(m[3])];
+  if (level === 'major') {
+    major += 1; minor = 0; patch = 0;
+  } else if (level === 'minor') {
+    minor += 1; patch = 0;
+  } else if (level === 'patch') {
+    patch += 1;
+  } else {
+    throw new Error(`Unknown --bump level "${level}" - use major, minor, or patch.`);
+  }
+  return `${major}.${minor}.${patch}`;
+}
+
+function git(args) {
+  return spawnSync('git', args, { cwd: repoRoot, encoding: 'utf8', shell: onWindows });
+}
+
+function isGitClean() {
+  const res = git(['status', '--porcelain']);
+  return res.status === 0 && res.stdout.trim() === '';
+}
+
+function tagExists(tagName) {
+  return git(['rev-parse', '-q', '--verify', `refs/tags/${tagName}`]).status === 0;
 }
 
 async function main() {
   const apps = await discoverApps();
-  const arg = process.argv[2];
+  const [idsArg, ...flagArgs] = process.argv.slice(2);
 
-  if (!arg) {
+  if (!idsArg) {
     printUsage(apps);
     process.exit(1);
   }
 
-  const requested = [...new Set(arg.split(',').map((id) => id.trim()).filter(Boolean))];
+  const requested = [...new Set(idsArg.split(',').map((id) => id.trim()).filter(Boolean))];
   if (requested.length === 0) {
     printUsage(apps);
     process.exit(1);
@@ -60,6 +118,8 @@ async function main() {
     process.exit(1);
   }
 
+  const { release, bumpLevel, setVersion } = parseFlags(flagArgs);
+
   const sortedIds = requested.slice().sort();
   const mode = sortedIds.join('-');
   const envPath = path.join(shellDir, `.env.${mode}`);
@@ -71,13 +131,76 @@ async function main() {
   );
   console.log(`Wrote ${path.relative(repoRoot, envPath)} (VITE_ENABLED_APPS=${sortedIds.join(',')})`);
 
-  const result = spawnSync(
+  const build = spawnSync(
     'npm',
     ['run', 'build', '-w', '@multiapp/shell', '--', '--mode', mode],
-    { cwd: repoRoot, stdio: 'inherit', shell: process.platform === 'win32' },
+    { cwd: repoRoot, stdio: 'inherit', shell: onWindows },
   );
 
-  process.exit(result.status ?? 1);
+  if (build.status !== 0) {
+    process.exit(build.status ?? 1);
+  }
+
+  if (!release) {
+    console.log('--no-release passed - built dist/ only, skipped version bump + tag.');
+    process.exit(0);
+  }
+
+  if (!existsSync(path.join(repoRoot, '.git'))) {
+    console.warn('No git repository at the project root - skipped version bump + tag.');
+    process.exit(0);
+  }
+
+  if (!isGitClean()) {
+    console.warn(
+      'Working tree has uncommitted changes - skipped version bump + tag.\n' +
+        'Commit your fix/change first, then re-run this to cut a release.',
+    );
+    process.exit(0);
+  }
+
+  const pkgPath = path.join(shellDir, 'package.json');
+  const pkg = JSON.parse(readFileSync(pkgPath, 'utf8'));
+  const currentVersion = pkg.version;
+  let newVersion;
+  try {
+    newVersion = setVersion ?? bumpVersion(currentVersion, bumpLevel);
+  } catch (err) {
+    console.error(err.message);
+    process.exit(1);
+  }
+
+  const tagName = `shell-v${newVersion}`;
+  if (tagExists(tagName)) {
+    console.error(`Tag ${tagName} already exists - pick a different --set-version or --bump level.`);
+    process.exit(1);
+  }
+
+  pkg.version = newVersion;
+  writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n');
+
+  const commitMessage = `release(shell): v${newVersion} - apps: ${sortedIds.join(',')}`;
+
+  const add = git(['add', path.relative(repoRoot, pkgPath)]);
+  if (add.status !== 0) {
+    console.error(add.stderr);
+    process.exit(add.status ?? 1);
+  }
+
+  const commit = git(['commit', '-m', commitMessage]);
+  if (commit.status !== 0) {
+    console.error(commit.stderr || commit.stdout);
+    process.exit(commit.status ?? 1);
+  }
+
+  const tag = git(['tag', '-a', tagName, '-m', commitMessage]);
+  if (tag.status !== 0) {
+    console.error(tag.stderr);
+    process.exit(tag.status ?? 1);
+  }
+
+  console.log(`Released shell v${currentVersion} -> v${newVersion}, tagged ${tagName}.`);
+  console.log('Push with: git push && git push --tags');
 }
 
 main();
